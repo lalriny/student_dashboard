@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import api from "../api/apiClient";
 import "../styles/quiz.css";
 
 export default function QuizDetail() {
@@ -16,27 +17,21 @@ export default function QuizDetail() {
   // FETCH QUIZ FROM BACKEND
   // ===============================
   useEffect(() => {
-    const fetchQuiz = async () => {
+    async function fetchQuiz() {
       try {
         setLoading(true);
+        setError(null);
 
-        const res = await fetch(`/api/quizzes/${quizId}/`, {
-          credentials: "include",
-        });
+        const res = await api.get(`/quizzes/${quizId}/`);
+        setQuizData(res.data);
 
-        if (!res.ok) {
-          throw new Error("Failed to load quiz.");
-        }
-
-        const data = await res.json();
-        setQuizData(data);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load quiz:", err);
         setError("Unable to load quiz.");
       } finally {
         setLoading(false);
       }
-    };
+    }
 
     fetchQuiz();
   }, [quizId]);
@@ -57,6 +52,7 @@ export default function QuizDetail() {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
+      setError(null);
 
       const formattedAnswers = Object.entries(answers).map(
         ([question_id, choice_id]) => ({
@@ -65,28 +61,19 @@ export default function QuizDetail() {
         })
       );
 
-      const res = await fetch(`/api/quizzes/${quizId}/submit/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
+      const res = await api.post(
+        `/quizzes/${quizId}/submit/`,
+        {
           answers: formattedAnswers,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Submission failed.");
-      }
-
-      const resultData = await res.json();
+        }
+      );
 
       navigate(`/subjects/quiz/result/${quizId}`, {
-        state: resultData,
+        state: res.data,
       });
+
     } catch (err) {
-      console.error(err);
+      console.error("Submission failed:", err);
       setError("Failed to submit quiz.");
     } finally {
       setSubmitting(false);
@@ -97,17 +84,13 @@ export default function QuizDetail() {
   // STATES
   // ===============================
 
-  if (loading) {
+  if (loading)
     return <div className="quizDetailPage">Loading quiz...</div>;
-  }
 
-  if (error) {
+  if (error)
     return <div className="quizDetailPage">{error}</div>;
-  }
 
-  if (!quizData) {
-    return null;
-  }
+  if (!quizData) return null;
 
   const allAnswered = quizData.questions.every(
     (q) => answers[q.id] !== undefined
@@ -119,12 +102,14 @@ export default function QuizDetail() {
   return (
     <div className="quizDetailPage">
       <div className="quizDetailBox">
-        {/* Back Button */}
-        <button className="quizDetailBack" onClick={() => navigate(-1)}>
+
+        <button
+          className="quizDetailBack"
+          onClick={() => navigate(-1)}
+        >
           &lt; Back
         </button>
 
-        {/* Header */}
         <div className="quizDetailHeader">
           <h2 className="quizDetailTitle">
             {quizData.subject_name || "Subject"}
@@ -135,9 +120,8 @@ export default function QuizDetail() {
           </div>
         </div>
 
-        {/* Quiz Content */}
         <div className="quizDetailContent">
-          {/* Quiz Info */}
+
           <div className="quizDetailInfo">
             <h3 className="quizDetailInfoTitle">
               {quizData.title}
@@ -152,7 +136,6 @@ export default function QuizDetail() {
             </p>
           </div>
 
-          {/* Questions */}
           <div className="quizDetailQuestions">
             {quizData.questions.map((q, index) => (
               <div key={q.id} className="quizDetailQuestion">
@@ -185,7 +168,6 @@ export default function QuizDetail() {
             ))}
           </div>
 
-          {/* Submit */}
           <div className="quizDetailSubmitWrap">
             <button
               className="quizDetailSubmit"
@@ -195,6 +177,7 @@ export default function QuizDetail() {
               {submitting ? "Submitting..." : "Submit"}
             </button>
           </div>
+
         </div>
       </div>
     </div>

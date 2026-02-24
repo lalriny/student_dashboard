@@ -1,35 +1,40 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import api from "../api/apiClient";
 import SubjectCard from "../components/SubjectCard";
 import "../styles/subjects.css";
 
 export default function SubjectsQuiz() {
   const navigate = useNavigate();
 
-  // State for data (future backend data)
   const [subjectData, setSubjectData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data (simulates backend response)
- useEffect(() => {
-  const fetchSubjects = async () => {
-    try {
-      const res = await fetch("/api/student/quiz-subjects/", {
-        credentials: "include",
-      });
+  useEffect(() => {
+    async function fetchSubjects() {
+      try {
+        setLoading(true);
+        setError(null);
 
-      if (!res.ok) throw new Error("Failed to fetch subjects");
+        // ✅ Uses your centralized axios instance
+        const res = await api.get("/student/quiz-subjects/");
 
-      const data = await res.json();
-      setSubjectData(data);
-    } catch (err) {
-      console.error(err);
+        setSubjectData(res.data);
+      } catch (err) {
+        console.error("Failed to fetch quiz subjects:", err);
+        setError("Failed to load quiz subjects.");
+        setSubjectData([]);
+      } finally {
+        setLoading(false);
+      }
     }
-  };
 
-  fetchSubjects();
-}, []);
+    fetchSubjects();
+  }, []);
 
-
+  if (loading) return <div>Loading quiz subjects...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className="subjectsPage">
@@ -44,13 +49,21 @@ export default function SubjectsQuiz() {
         </div>
 
         <div className="subjectsGrid">
-          {subjectData.map((item) => (
-            <SubjectCard
-              key={item.id}
-              {...item}
-              onClick={() => navigate(`/subjects/quiz/${item.id}`)}
-            />
-          ))}
+          {subjectData.length === 0 ? (
+            <div>No quiz subjects available.</div>
+          ) : (
+            subjectData.map((item) => (
+              <SubjectCard
+                key={item.id}
+                img="https://images.unsplash.com/photo-1513258496099-48168024aec0?w=600"
+                subject={item.subject}
+                teacher={item.teacher}
+                onClick={() =>
+                  navigate(`/subjects/quiz/${item.id}`)
+                }
+              />
+            ))
+          )}
         </div>
       </div>
     </div>

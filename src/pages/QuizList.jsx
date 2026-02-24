@@ -1,59 +1,68 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import api from "../api/apiClient";
 import QuizCard from "../components/QuizCard";
 import "../styles/quiz.css";
 
 export default function QuizList() {
   const navigate = useNavigate();
   const { subjectId } = useParams();
-  const [activeTab, setActiveTab] = useState("pending");
 
-  // State for data (future backend data)
+  const [activeTab, setActiveTab] = useState("pending");
   const [pendingQuizzes, setPendingQuizzes] = useState([]);
   const [completedQuizzes, setCompletedQuizzes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data (simulates backend response)
- useEffect(() => {
-  const fetchQuizzes = async () => {
-    try {
-      const res = await fetch(
-        `/api/student/quizzes/?subject=${subjectId}&status=${activeTab}`,
-        {
-          credentials: "include",
-        }
-      );
-
-      if (!res.ok) throw new Error("Failed to fetch quizzes");
-
-      const data = await res.json();
-
-      if (activeTab === "pending") {
-        setPendingQuizzes(data);
-      } else {
-        setCompletedQuizzes(data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  fetchQuizzes();
-}, [subjectId, activeTab]);
-
-{/*   // example for backend //
-
+  // =====================================
+  // FETCH QUIZZES FROM BACKEND
+  // =====================================
   useEffect(() => {
-  fetch(`/api/subjects/${subjectId}/quizzes`)
-    .then((res) => res.json())
-    .then((data) => {
-      setPendingQuizzes(data.pending);
-      setCompletedQuizzes(data.completed);
-    });
-}, [subjectId]);
+    if (!subjectId) return;
 
-*/}
+    async function fetchQuizzes() {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const quizzes = activeTab === "pending" ? pendingQuizzes : completedQuizzes;
+        // 🔥 Using centralized axios
+        const res = await api.get("/student/quizzes/", {
+          params: {
+            subject: subjectId,
+          },
+        });
+
+        const pending = [];
+        const completed = [];
+
+        res.data.forEach((quiz) => {
+          if (quiz.status === "SUBMITTED") {
+            completed.push(quiz);
+          } else {
+            pending.push(quiz);
+          }
+        });
+
+        setPendingQuizzes(pending);
+        setCompletedQuizzes(completed);
+
+      } catch (err) {
+        console.error("Failed to fetch quizzes:", err);
+        setError("Failed to load quizzes.");
+        setPendingQuizzes([]);
+        setCompletedQuizzes([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchQuizzes();
+  }, [subjectId]);
+
+  const quizzes =
+    activeTab === "pending"
+      ? pendingQuizzes
+      : completedQuizzes;
 
   const handleQuizClick = (quiz) => {
     if (activeTab === "pending") {
@@ -63,47 +72,64 @@ export default function QuizList() {
     }
   };
 
+  if (loading) return <div>Loading quizzes...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className="quizListPage">
-      {/* Back button in grey header area (like screenshot) */}
-      <button className="quizBackHeader" onClick={() => navigate(-1)}>
+      <button
+        className="quizBackHeader"
+        onClick={() => navigate(-1)}
+      >
         &lt; Back
       </button>
 
       <div className="quizListBox">
-        {/* Title center */}
-        <h2 className="quizListTitle">Subject Name</h2>
+        <h2 className="quizListTitle">Quizzes</h2>
 
-        {/* Tabs + Search Row */}
         <div className="quizTopRow">
           <div className="quizTabs">
             <button
-              className={`quizTab ${activeTab === "pending" ? "quizTabActive" : ""}`}
+              className={`quizTab ${
+                activeTab === "pending"
+                  ? "quizTabActive"
+                  : ""
+              }`}
               onClick={() => setActiveTab("pending")}
             >
-              Pending
+              Pending ({pendingQuizzes.length})
             </button>
 
             <button
-              className={`quizTab ${activeTab === "completed" ? "quizTabActive" : ""}`}
+              className={`quizTab ${
+                activeTab === "completed"
+                  ? "quizTabActive"
+                  : ""
+              }`}
               onClick={() => setActiveTab("completed")}
             >
-              Completed
+              Completed ({completedQuizzes.length})
             </button>
-          </div>
-
-          <div className="quizSearch">
-            <input placeholder="Search..." />
-            <span className="quizSearchIcon">🔍</span>
           </div>
         </div>
 
-        {/* Grid */}
         <div className="quizGrid">
-          {quizzes.map((quiz) => (
-            <QuizCard key={quiz.id} {...quiz} onClick={() => handleQuizClick(quiz)} />
-          ))}
+          {quizzes.length === 0 ? (
+            <div>No quizzes found.</div>
+          ) : (
+            quizzes.map((quiz) => (
+              <QuizCard
+                key={quiz.id}
+                img="https://images.unsplash.com/photo-1513258496099-48168024aec0?w=600"
+                title={quiz.title}
+                teacher={quiz.teacher_name}
+                deadline={new Date(
+                  quiz.due_date
+                ).toLocaleString()}
+                onClick={() => handleQuizClick(quiz)}
+              />
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -1,140 +1,124 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import api from "../api/apiClient";
 import "../styles/quiz.css";
 
 export default function QuizResult() {
   const navigate = useNavigate();
   const { quizId } = useParams();
 
-  const quizData = {
-    id: quizId,
-    title: "Quiz (ID or number)",
-    teacher: "Miss Ruatfeli",
-    dateCreated: "21 Jan 2026",
-    dueDate: "24 Jan 2026",
-    submittedDate: "22 Jan 2026 (7:00 PM)",
-    score: 4,
-    totalQuestions: 5,
-    questions: [
-      {
-        id: 1,
-        question: "What is . . .",
-        options: ["answer 1", "answer 2", "answer 3", "answer 4"],
-        selectedAnswer: 0,
-        correctAnswer: 0,
-        correctAnswerText: "Answer 1",
-      },
-      {
-        id: 2,
-        question: "What is . . .",
-        options: ["answer 1", "answer 2", "answer 3", "answer 4"],
-        selectedAnswer: 2,
-        correctAnswer: 2,
-        correctAnswerText: "Answer 3",
-      },
-      {
-        id: 3,
-        question: "What is . . .",
-        options: ["answer 1", "answer 2", "answer 3", "answer 4"],
-        selectedAnswer: 1,
-        correctAnswer: 1,
-        correctAnswerText: "Answer 2",
-      },
-      {
-        id: 4,
-        question: "What is . . .",
-        options: ["answer 1", "answer 2", "answer 3", "answer 4"],
-        selectedAnswer: 1,
-        correctAnswer: 1,
-        correctAnswerText: "Answer 2",
-      },
-      {
-        id: 5,
-        question: "What is . . .",
-        options: ["answer 1", "answer 2", "answer 3", "answer 4"],
-        selectedAnswer: 3,
-        correctAnswer: 2,
-        correctAnswerText: "Answer 4",
-      },
-    ],
-  };
+  const [resultData, setResultData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchResult() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await api.get(
+          `/quizzes/${quizId}/result/`
+        );
+
+        setResultData(res.data);
+
+      } catch (err) {
+        console.error("Failed to load result:", err);
+        setError("Unable to load result.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchResult();
+  }, [quizId]);
+
+  if (loading)
+    return <div className="quizDetailPage">Loading result...</div>;
+
+  if (error)
+    return <div className="quizDetailPage">{error}</div>;
+
+  if (!resultData) return null;
 
   return (
     <div className="quizDetailPage">
       <div className="quizDetailBox">
-        {/* Back Button */}
-        <button className="quizDetailBack" onClick={() => navigate(-1)}>
+
+        <button
+          className="quizDetailBack"
+          onClick={() => navigate(-1)}
+        >
           &lt; Back
         </button>
 
-        {/* Header with Title and Search */}
         <div className="quizDetailHeader">
-          <h2 className="quizDetailTitle">Subject Name</h2>
+          <h2 className="quizDetailTitle">
+            {resultData.subject_name}
+          </h2>
           <div className="quizDetailSearch">
             <input placeholder="Search..." />
             <span className="quizDetailSearchIcon">🔍</span>
           </div>
         </div>
 
-        {/* Quiz Content */}
         <div className="quizDetailContent">
-          {/* Quiz Info */}
+
           <div className="quizDetailInfo quizDetailInfo--result">
             <div className="quizDetailInfoLeft">
-              <h3 className="quizDetailInfoTitle">{quizData.title}</h3>
+              <h3 className="quizDetailInfoTitle">
+                {resultData.title}
+              </h3>
               <p className="quizDetailInfoMeta">
-                {quizData.teacher} - {quizData.dateCreated}
+                {resultData.teacher_name}
               </p>
-              <p className="quizDetailInfoDue">Due Date: {quizData.dueDate}</p>
-            </div>
-            <div className="quizDetailInfoRight">
-              <p className="quizDetailInfoSubmitted">
-                Submitted: {quizData.submittedDate}
+              <p className="quizDetailInfoDue">
+                Submitted:{" "}
+                {new Date(resultData.submitted_at).toLocaleString()}
               </p>
             </div>
           </div>
 
-          {/* Questions with Answers */}
           <div className="quizDetailQuestions">
-            {quizData.questions.map((q, index) => (
-              <div key={q.id} className="quizDetailQuestion quizDetailQuestion--result">
+            {resultData.questions.map((q, index) => (
+              <div
+                key={q.id}
+                className="quizDetailQuestion quizDetailQuestion--result"
+              >
                 <div className="quizDetailQuestionRow">
                   <p className="quizDetailQuestionText">
-                    {index + 1}. {q.question}
+                    {index + 1}. {q.text}
                   </p>
                   <p className="quizDetailQuestionAnswer">
-                    Ans: {q.correctAnswerText}
+                    Correct: {q.correct_choice}
                   </p>
                 </div>
+
                 <div className="quizDetailOptions quizDetailOptions--disabled">
-                  {q.options.map((option, optIndex) => (
-                    <label
-                      key={optIndex}
-                      className={`quizDetailOption ${
-                        q.selectedAnswer === optIndex ? "quizDetailOption--selected" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={`question-${q.id}`}
-                        checked={q.selectedAnswer === optIndex}
-                        disabled
-                        readOnly
-                      />
-                      <span className="quizDetailOptionRadio"></span>
-                      <span className="quizDetailOptionText">{option}</span>
-                    </label>
-                  ))}
+                  <div
+                    className={`quizDetailOption ${
+                      q.is_correct
+                        ? "quizDetailOption--selected"
+                        : ""
+                    }`}
+                  >
+                    <span className="quizDetailOptionText">
+                      Your Answer: {q.selected_choice}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Score */}
           <div className="quizDetailScore">
             <p className="quizDetailScoreText">
-              Score: {quizData.score}/{quizData.totalQuestions}
+              Score: {resultData.score} /{" "}
+              {resultData.total_marks}
             </p>
           </div>
+
         </div>
       </div>
     </div>
