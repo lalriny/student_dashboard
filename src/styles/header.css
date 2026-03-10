@@ -204,14 +204,36 @@
 
 @media (max-width: 768px) {
   .header {
-    padding-left: 16px;
+    background-color: #015865;
+    color: #ffffff;
+  }
+
+  .header__title {
+    color: #ffffff;
+  }
+
+  .header__subtitle {
+    color: rgba(255, 255, 255, 0.88);
   }
 
   .header__hamburger {
     display: block;
+    color: #ffffff;
+  }
+
+  .header__hamburger svg {
+    color: #ffffff;
+    fill: #ffffff;
+    stroke: #ffffff;
   }
 
   .header__courseWrap {
     display: none;
+  }
+}
+@media (max-width: 768px) {
+  .header__hamburger,
+  .header__hamburger * {
+    color: #ffffff !important;
   }
 }
