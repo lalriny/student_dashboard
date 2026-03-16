@@ -25,11 +25,14 @@ export default function AssignmentDetail() {
 
         const res = await api.get(`/assignments/${assignmentId}/`);
         const data = res.data;
+
         setAssignment(data);
 
         if (data.submission_status === "SUBMITTED") {
           setIsSubmitted(true);
-          setSubmittedAt(data.submitted_at ? new Date(data.submitted_at) : null);
+          setSubmittedAt(
+            data.submitted_at ? new Date(data.submitted_at) : null
+          );
         } else {
           setIsSubmitted(false);
           setSubmittedAt(null);
@@ -66,7 +69,9 @@ export default function AssignmentDetail() {
 
       setAssignment(updated);
       setIsSubmitted(true);
-      setSubmittedAt(updated.submitted_at ? new Date(updated.submitted_at) : new Date());
+      setSubmittedAt(
+        updated.submitted_at ? new Date(updated.submitted_at) : new Date()
+      );
       setUploadedFile(null);
     } catch (err) {
       console.error("Submission error:", err);
@@ -82,14 +87,29 @@ export default function AssignmentDetail() {
 
   const formatSubmittedTop = (dateObj) => {
     if (!dateObj) return "";
-    const d = dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    const t = dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    const d = dateObj.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+    const t = dateObj.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
     return `Submitted: ${d} / ${t}`;
   };
 
   const formatSmallDate = (dateObj) => {
     if (!dateObj) return "";
-    return dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+
+    return dateObj.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   if (loading) return <div>Loading...</div>;
@@ -108,43 +128,76 @@ export default function AssignmentDetail() {
 
       <div className="assignmentDetailBodyBox">
         <div className="assignmentDetailContent">
-          {/* LEFT: Assignment information */}
+
+          {/* LEFT SIDE */}
           <div className="assignmentDetailLeft">
             <div className="assignmentTitleRow">
               <h3 className="assignmentDetailTitle">Assignment</h3>
+
               {isSubmitted && (
-                <p className="submittedTopText">{formatSubmittedTop(submittedAt)}</p>
+                <p className="submittedTopText">
+                  {formatSubmittedTop(submittedAt)}
+                </p>
               )}
             </div>
 
             <p className="assignmentDetailDue">
-              Due Date: {new Date(assignment.due_date).toLocaleDateString("en-GB")}
+              Due Date:{" "}
+              {new Date(assignment.due_date).toLocaleDateString("en-GB")}
             </p>
 
             <div className="assignmentDetailDivider" />
 
-            <p className="assignmentDetailLabel">Title: {assignment.title}</p>
-            <p className="assignmentDetailDesc">Description: {assignment.description}</p>
+            <p className="assignmentDetailLabel">
+              Title: {assignment.title}
+            </p>
+
+            <p className="assignmentDetailDesc">
+              Description: {assignment.description}
+            </p>
 
             {assignment.attachment && (
               <div className="fileStrip">
                 <div className="fileStripIcon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M14 2V8H20" stroke="#444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <path
+                      d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
+                      stroke="#444"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M14 2V8H20"
+                      stroke="#444"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </div>
-                <div className="fileStripName">{assignment.attachment.split("/").pop()}</div>
+
+                <div className="fileStripName">
+                  {assignment.attachment.split("/").pop()}
+                </div>
               </div>
             )}
           </div>
 
-          {/* RIGHT: Your Work */}
+          {/* RIGHT SIDE */}
           <div className="assignmentDetailRight">
             <div className="yourWorkTop">
               <h4 className="assignmentDetailWorkTitle">Your Work</h4>
+
               {isSubmitted && (
-                <span className="yourWorkDate">{formatSmallDate(submittedAt)}</span>
+                <span className="yourWorkDate">
+                  {formatSmallDate(submittedAt)}
+                </span>
               )}
             </div>
 
@@ -154,6 +207,7 @@ export default function AssignmentDetail() {
                   <input type="file" hidden onChange={handleFileUpload} />
                   [Upload File]
                 </label>
+
                 <button
                   className="assignmentDetailSubmitBtn"
                   onClick={handleSubmit}
@@ -167,12 +221,14 @@ export default function AssignmentDetail() {
                 <button className="openFileBtn" onClick={handleOpenFile}>
                   [Open File]
                 </button>
+
                 <button className="submittedBtn" disabled>
                   Submitted
                 </button>
               </>
             )}
           </div>
+
         </div>
       </div>
     </div>
