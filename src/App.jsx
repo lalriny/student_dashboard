@@ -1,5 +1,6 @@
+import { useEffect } from "react"; // NEW
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext"; // UPDATED
 import { CourseProvider } from "./contexts/CourseContext";
 
 import StudentLayout from "./layout/StudentLayout";
@@ -31,14 +32,38 @@ import LiveSessions from "./pages/LiveSessions";
 
 import Quiz from "./pages/Quiz";
 
+// NEW: auth guard for app domain
+function RequireStudentAuth({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      window.location.href = "https://www.shikshacom.com/login";
+    }
+  }, [loading, isAuthenticated]);
+
+  if (loading) return null;
+
+  if (!isAuthenticated) return null;
+
+  return children;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <CourseProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<StudentLayout />}>
-
+            {/* UPDATED: StudentLayout ko auth guard ke andar wrap kiya */}
+            <Route
+              path="/"
+              element={
+                <RequireStudentAuth>
+                  <StudentLayout />
+                </RequireStudentAuth>
+              }
+            >
               {/* Dashboard */}
               <Route index element={<Dashboard />} />
 
@@ -131,7 +156,6 @@ export default function App() {
 
               {/* Global Quiz */}
               <Route path="quiz" element={<Quiz />} />
-
             </Route>
           </Routes>
         </BrowserRouter>
