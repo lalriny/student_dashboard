@@ -3,7 +3,7 @@ import "../styles/assignmentPending.css";
 
 export default function AssignmentPendingCard({ 
   id, 
-  subjectId,   // ✅ ADD THIS
+  subjectId,   // 
   title, 
   teacher, 
   deadline 
