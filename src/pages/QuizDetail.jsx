@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/apiClient";
 import "../styles/quiz.css";
@@ -12,6 +12,13 @@ export default function QuizDetail() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  // ✅ TIMER STATE
+  const [timeLeft, setTimeLeft] = useState(null);
+
+  // ✅ REF (fix auto submit issue)
+  const answersRef = useRef({});
+  const submittedRef = useRef(false);
 
   useEffect(() => {
     async function fetchQuiz() {
@@ -30,8 +37,68 @@ export default function QuizDetail() {
     if (quizId) fetchQuiz();
   }, [quizId]);
 
+  // ✅ TIMER LOGIC (default = 5 min)
+  useEffect(() => {
+    if (!quizData) return;
+
+    const duration = (quizData.duration || 5) * 60;
+
+    let startTime = localStorage.getItem(`quiz_${quizId}_start`);
+
+    if (!startTime) {
+      startTime = Date.now();
+      localStorage.setItem(`quiz_${quizId}_start`, startTime);
+    } else {
+      startTime = parseInt(startTime);
+    }
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTime) / 1000);
+      const remaining = duration - elapsed;
+
+      if (remaining <= 0) {
+        clearInterval(interval);
+        setTimeLeft(0);
+
+        if (!submittedRef.current) {
+          submittedRef.current = true;
+          handleAutoSubmit();
+        }
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [quizData]);
+
   const handleAnswerChange = (questionId, choiceId) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: choiceId }));
+    setAnswers((prev) => {
+      const updated = { ...prev, [questionId]: choiceId };
+      answersRef.current = updated; // ✅ keep latest answers
+      return updated;
+    });
+  };
+
+  // ✅ AUTO SUBMIT (fixed)
+  const handleAutoSubmit = async () => {
+    try {
+      const formattedAnswers = Object.entries(answersRef.current).map(
+        ([questionId, choiceId]) => ({
+          question: questionId,
+          selected_choice: choiceId,
+        })
+      );
+
+      await api.post(`student/quizzes/${quizId}/submit/`, { answers: formattedAnswers });
+
+      localStorage.removeItem(`quiz_${quizId}_start`);
+
+      navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
+    } catch (err) {
+      console.error("Auto submit failed", err);
+    }
   };
 
   const handleSubmit = async () => {
@@ -47,6 +114,10 @@ export default function QuizDetail() {
       );
 
       await api.post(`student/quizzes/${quizId}/submit/`, { answers: formattedAnswers });
+
+      localStorage.removeItem(`quiz_${quizId}_start`);
+      submittedRef.current = true;
+
       navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to submit quiz.");
@@ -63,15 +134,28 @@ export default function QuizDetail() {
 
   return (
     <div className="quizActivePage">
-      <button className="quizBackHeader" onClick={() => navigate(-1)}>
+      <button className="quizBackHeader" onClick={() => navigate(`/subjects/quiz/${subjectId}`)}>
         &lt; Back
       </button>
 
       <div className="quizActiveHeaderBox">
         <h2 className="quizPendingHeaderTitle">{quizData.subject_name}</h2>
-        <div className="quizSearch">
-          <input placeholder="Search..." />
-          <span className="quizSearchIcon">🔍</span>
+
+        <div className="quizSearchWrapper">
+          {timeLeft !== null && (
+            <div className="quizTimer">
+              <span className="quizTimerIcon">⏱</span>
+              <span className="quizTimerText">
+                {Math.floor(timeLeft / 60)}:
+                {String(timeLeft % 60).padStart(2, "0")}
+              </span>
+            </div>
+          )}
+
+          <div className="quizSearch">
+            <input placeholder="Search..." />
+            <span className="quizSearchIcon">🔍</span>
+          </div>
         </div>
       </div>
 

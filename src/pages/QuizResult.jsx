@@ -6,7 +6,7 @@ import "../styles/quiz.css";
 
 export default function QuizResult() {
   const navigate = useNavigate();
-  const { quizId } = useParams();
+  const { subjectId, quizId } = useParams();
 
   const [resultData, setResultData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ export default function QuizResult() {
 
   return (
     <div className="quizResultPage">
-      <button className="quizResultBack" onClick={() => navigate(-1)}>
+      <button className="quizResultBack" onClick={() => navigate(`/subjects/quiz/${subjectId}`)}>
         &lt; Back
       </button>
 
