@@ -9,9 +9,12 @@ export default function QuizDetail() {
 
   const [quizData, setQuizData] = useState(null);
   const [answers, setAnswers] = useState({});
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  
 
   // ✅ TIMER STATE
   const [timeLeft, setTimeLeft] = useState(null);
@@ -130,6 +133,8 @@ export default function QuizDetail() {
   if (error) return <div className="quizActivePage">{error}</div>;
   if (!quizData) return null;
 
+  const currentQuestion = quizData.questions[currentIndex];
+
   const allAnswered = quizData.questions?.every((q) => answers[q.id] !== undefined) ?? false;
 
   return (
@@ -166,44 +171,79 @@ export default function QuizDetail() {
           <p className="quizDetailInfoDue">Due: {new Date(quizData.due_date).toLocaleString()}</p>
         </div>
 
-        <div className="quizDetailQuestions">
-          {quizData.questions.map((q, index) => (
-            <div key={q.id} className="quizDetailQuestion">
-              <p className="quizDetailQuestionText">
-                {index + 1}. {q.text}
-              </p>
-              <div className="quizDetailOptions">
-                {q.choices.map((choice) => (
-                  <label
-                    key={choice.id}
-                    className={`quizDetailOption ${
-                      answers[q.id] === choice.id ? "quizDetailOption--selected" : ""
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name={`question-${q.id}`}
-                      checked={answers[q.id] === choice.id}
-                      onChange={() => handleAnswerChange(q.id, choice.id)}
-                    />
-                    <span className="quizDetailOptionRadio" />
-                    <span className="quizDetailOptionText">{choice.text}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+          <div className="quizDetailQuestion">
+  <p className="quizDetailQuestionText">
+    {currentIndex + 1}. {currentQuestion.text}
+  </p>
 
-        <div className="quizDetailSubmitWrap">
-          <button
-            className="quizDetailSubmit"
-            onClick={handleSubmit}
-            disabled={!allAnswered || submitting}
-          >
-            {submitting ? "Submitting..." : "Submit"}
-          </button>
-        </div>
+  <div className="quizDetailOptions">
+    {currentQuestion.choices.map((choice) => (
+      <label
+        key={choice.id}
+        className={`quizDetailOption ${
+          answers[currentQuestion.id] === choice.id
+            ? "quizDetailOption--selected"
+            : ""
+        }`}
+      >
+        <input
+          type="radio"
+          name={`question-${currentQuestion.id}`}
+          checked={answers[currentQuestion.id] === choice.id}
+          onChange={() =>
+            handleAnswerChange(currentQuestion.id, choice.id)
+          }
+        />
+        <span className="quizDetailOptionRadio" />
+        <span className="quizDetailOptionText">{choice.text}</span>
+      </label>
+    ))}
+  </div>
+</div>
+
+<div style={{ marginTop: "20px" }}>
+  {quizData.questions.map((q, index) => (
+    <button
+      key={q.id}
+      onClick={() => setCurrentIndex(index)}
+      style={{
+        margin: "5px",
+        padding: "6px 10px",
+        background:
+          answers[q.id]
+            ? "green"
+            : index === currentIndex
+            ? "blue"
+            : "gray",
+        color: "white",
+        border: "none",
+        borderRadius: "4px",
+      }}
+    >
+      {index + 1}
+    </button>
+  ))}
+</div>
+
+        <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+  
+  {currentIndex > 0 && (
+    <button onClick={() => setCurrentIndex(currentIndex - 1)}>
+      Back
+    </button>
+  )}
+
+  {currentIndex < quizData.questions.length - 1 ? (
+    <button onClick={() => setCurrentIndex(currentIndex + 1)}>
+      Save & Next
+    </button>
+  ) : (
+    <button onClick={handleSubmit} disabled={submitting}>
+      {submitting ? "Submitting..." : "Submit"}
+    </button>
+  )}
+
+</div>
       </div>
     </div>
   );
