@@ -1,22 +1,36 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useCourse } from "../contexts/CourseContext";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
 import "../styles/liveSessions.css";
 
 export default function LiveSessions() {
   const navigate = useNavigate();
+  const { activeCourse } = useCourse();
+
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!activeCourse) {
+      setSessions([]);
+      setLoading(false);
+      return;
+    }
+
     const fetchSessions = async () => {
+      setLoading(true);
       try {
-        const res = await api.get("/livestream/student/sessions/");
+        const res = await api.get(
+          `/livestream/student/sessions/?course_id=${activeCourse.id}`
+        );
+
         const sorted = res.data.sort(
           (a, b) => new Date(a.start_time) - new Date(b.start_time)
         );
+
         setSessions(sorted);
       } catch (err) {
         console.error(err);
@@ -27,14 +41,16 @@ export default function LiveSessions() {
     };
 
     fetchSessions();
-  }, []);
+  }, [activeCourse]);
 
   const formatStatus = (session) => {
-    if (session.status === "LIVE") return "🔴 Live Now";
-    if (session.status === "SCHEDULED")
+    const status = session.computed_status;
+
+    if (status === "LIVE") return "🔴 Live Now";
+    if (status === "SCHEDULED")
       return `Starts at ${new Date(session.start_time).toLocaleTimeString()}`;
-    if (session.status === "COMPLETED") return "Completed";
-    return session.status;
+    if (status === "COMPLETED") return "Completed";
+    return status;
   };
 
   if (loading) return <div style={{ padding: 20 }}>Loading sessions...</div>;
@@ -43,11 +59,19 @@ export default function LiveSessions() {
   return (
     <div className="liveSessionsPage">
       <div className="liveSessionsHeaderBox">
-        <PageHeader title="Live Sessions" />
+        <PageHeader
+          title={
+            activeCourse
+              ? `Live Sessions - ${activeCourse.title}`
+              : "Live Sessions"
+          }
+        />
       </div>
 
       <div className="liveSessionsBodyBox">
-        {sessions.length === 0 ? (
+        {!activeCourse ? (
+          <div>Please select a course.</div>
+        ) : sessions.length === 0 ? (
           <div>No live sessions available.</div>
         ) : (
           <div className="liveGrid">
@@ -71,7 +95,9 @@ export default function LiveSessions() {
                 <div className="liveCardBody">
                   <p className="liveCardText">{s.title}</p>
                   <p className="liveCardText">{s.teacher}</p>
-                  <p className="liveCardText">{new Date(s.start_time).toLocaleString()}</p>
+                  <p className="liveCardText">
+                    {new Date(s.start_time).toLocaleString()}
+                  </p>
                   <p className="liveCardText">{formatStatus(s)}</p>
                 </div>
               </div>
