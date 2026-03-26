@@ -128,6 +128,7 @@ export default function QuizDetail() {
       setSubmitting(false);
     }
   };
+  
 
   if (loading) return <div className="quizActivePage">Loading quiz...</div>;
   if (error) return <div className="quizActivePage">{error}</div>;

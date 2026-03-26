@@ -12,12 +12,23 @@ export default function QuizResult() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openExplanation, setOpenExplanation] = useState({});
-  const toggleExplanation = (id) => {
 
-  setOpenExplanation(prev => ({
-    ...prev,
-     [id]: !prev[id]
-   }));
+  const toggleExplanation = (id) => {
+    setOpenExplanation(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  // ✅ NEW: REATTEMPT FUNCTION
+  const handleReattempt = async () => {
+    try {
+      await api.post(`/quizzes/${quizId}/start/`);
+      navigate(`/subjects/quiz/${subjectId}/take/${quizId}`);
+    } catch (err) {
+      console.error("Failed to reattempt quiz:", err);
+      alert("Unable to start reattempt");
+    }
   };
 
   useEffect(() => {
@@ -74,6 +85,7 @@ export default function QuizResult() {
                   Ans: {q.correct_choice}
                 </p>
               </div>
+
               <div className="quizDetailOptions quizDetailOptions--disabled">
                 <div
                   className={`quizDetailOption ${
@@ -99,16 +111,32 @@ export default function QuizResult() {
                   <p>{q.explanation}</p>
                 </div>
               )}
-
             </div>
           ))}
         </div>
 
+        {/* ✅ MODIFIED: SCORE + REATTEMPT BUTTON */}
         <div className="quizDetailScore">
           <p className="quizDetailScoreText">
             Score: {resultData.score} / {resultData.total_marks}
           </p>
+
+          <button
+            onClick={handleReattempt}
+            style={{
+              marginTop: "12px",
+              padding: "8px 14px",
+              background: "#007bff",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer"
+            }}
+          >
+            Reattempt Quiz
+          </button>
         </div>
+
       </div>
     </div>
   );
