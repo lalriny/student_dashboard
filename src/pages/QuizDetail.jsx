@@ -40,6 +40,20 @@ export default function QuizDetail() {
     if (quizId) fetchQuiz();
   }, [quizId]);
 
+  useEffect(() => {
+  async function startQuiz() {
+    try {
+      await api.post(`/quizzes/${quizId}/start/`);
+    } catch (err) {
+      console.error("Start quiz failed:", err.response?.data);
+    }
+  }
+
+  if (quizId) {
+    startQuiz();
+  }
+}, [quizId]);
+
   // ✅ TIMER LOGIC (default = 5 min)
   useEffect(() => {
     if (!quizData) return;
