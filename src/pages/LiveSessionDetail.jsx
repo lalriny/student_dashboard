@@ -11,20 +11,33 @@ export default function LiveSessionDetail() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const joinSession = async () => {
       try {
         const res = await api.post(
-          `https://api.shikshacom.com/api/livestream/sessions/${id}/join/`
+          `/livestream/sessions/${id}/join/`,
+          {},
+          { signal: controller.signal }
         );
+
         setData(res.data);
       } catch (err) {
-        console.error(err);
-        alert("You cannot join this session.");
-        navigate(-1);
+        if (err.name !== "CanceledError") {
+          console.error(err);
+
+          const message =
+            err?.response?.data?.detail || "You cannot join this session.";
+
+          alert(message);
+          navigate("/live-sessions"); // safer than -1
+        }
       }
     };
 
     joinSession();
+
+    return () => controller.abort();
   }, [id, navigate]);
 
   if (!data) return <div style={{ padding: 20 }}>Joining session...</div>;

@@ -20,11 +20,16 @@ export default function LiveSessions() {
       return;
     }
 
+    const controller = new AbortController();
+
     const fetchSessions = async () => {
       setLoading(true);
+      setError(null);
+
       try {
         const res = await api.get(
-          `https://api.shikshacom.com/api/livestream/student/sessions/?course_id=${activeCourse.id}`
+          `/livestream/student/sessions/?course_id=${activeCourse.id}`,
+          { signal: controller.signal }
         );
 
         const sorted = res.data.sort(
@@ -33,14 +38,18 @@ export default function LiveSessions() {
 
         setSessions(sorted);
       } catch (err) {
-        console.error(err);
-        setError("Unable to load sessions.");
+        if (err.name !== "CanceledError") {
+          console.error(err);
+          setError("Unable to load sessions.");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchSessions();
+
+    return () => controller.abort();
   }, [activeCourse]);
 
   const formatStatus = (session) => {
@@ -80,7 +89,8 @@ export default function LiveSessions() {
                 key={s.id}
                 className={`liveCard ${s.can_join ? "" : "disabledCard"}`}
                 onClick={() => {
-                  if (s.can_join) navigate(`/live/${s.id}`);
+                  if (!s.can_join) return;
+                  navigate(`/live/${s.id}`);
                 }}
                 style={{
                   cursor: s.can_join ? "pointer" : "not-allowed",
@@ -92,6 +102,7 @@ export default function LiveSessions() {
                   alt={s.title}
                   className="liveCardImg"
                 />
+
                 <div className="liveCardBody">
                   <p className="liveCardText">{s.title}</p>
                   <p className="liveCardText">{s.teacher}</p>
