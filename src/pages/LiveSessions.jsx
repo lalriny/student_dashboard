@@ -10,49 +10,59 @@ export default function LiveSessions() {
   const { activeCourse } = useCourse();
 
   const [sessions, setSessions] = useState([]);
+  const [subjects, setSubjects] = useState([]); // ✅ NEW
+  const [selectedSubject, setSelectedSubject] = useState(""); // ✅ NEW
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!activeCourse) {
       setSessions([]);
+      setSubjects([]);
       setLoading(false);
       return;
     }
 
-    const controller = new AbortController();
-
-    const fetchSessions = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const res = await api.get(
-          `/livestream/student/sessions/?course_id=${activeCourse.id}`,
-          { signal: controller.signal }
+        // ✅ fetch sessions
+        const sessionRes = await api.get(
+          `/livestream/student/sessions/?course_id=${activeCourse.id}`
         );
 
-        const sorted = res.data.sort(
+        // ✅ fetch subjects
+        const subjectRes = await api.get(
+          `/courses/${activeCourse.id}/subjects/`
+        );
+
+        const sorted = sessionRes.data.sort(
           (a, b) => new Date(a.start_time) - new Date(b.start_time)
         );
 
         setSessions(sorted);
+        setSubjects(subjectRes.data);
       } catch (err) {
-        if (err.name !== "CanceledError") {
-          console.error(err);
-          setError("Unable to load sessions.");
-        }
+        console.error(err);
+        setError("Unable to load sessions.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSessions();
-
-    return () => controller.abort();
+    fetchData();
   }, [activeCourse]);
 
-  // ✅ Centralized IST formatter
+  // ✅ FILTER LOGIC
+  const filteredSessions = selectedSubject
+    ? sessions.filter(
+        (s) => String(s.subject_id) === String(selectedSubject)
+      )
+    : sessions;
+
+  // ✅ FORMATTERS
   const formatIST = (dateString) => {
     return new Date(dateString).toLocaleString("en-IN", {
       timeZone: "Asia/Kolkata",
@@ -88,16 +98,34 @@ export default function LiveSessions() {
               : "Live Sessions"
           }
         />
+
+        {/* ✅ FILTER DROPDOWN */}
+        <select
+          value={selectedSubject}
+          onChange={(e) => setSelectedSubject(e.target.value)}
+          style={{
+            marginLeft: "20px",
+            padding: "6px 10px",
+            borderRadius: "6px",
+          }}
+        >
+          <option value="">All Subjects</option>
+          {subjects.map((sub) => (
+            <option key={sub.id} value={sub.id}>
+              {sub.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="liveSessionsBodyBox">
         {!activeCourse ? (
           <div>Please select a course.</div>
-        ) : sessions.length === 0 ? (
+        ) : filteredSessions.length === 0 ? (
           <div>No live sessions available.</div>
         ) : (
           <div className="liveGrid">
-            {sessions.map((s) => (
+            {filteredSessions.map((s) => (
               <div
                 key={s.id}
                 className={`liveCard ${s.can_join ? "" : "disabledCard"}`}
