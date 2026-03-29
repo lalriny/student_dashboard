@@ -4,20 +4,43 @@ import ParticipantsPanel from "./ParticipantsPanel";
 import ChatPanel from "./ChatPanel";
 import RaiseHandButton from "./RaiseHandButton";
 import ControlBar from "./ControlBar";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { MdFullscreen, MdFullscreenExit } from "react-icons/md";
 
 export default function ClassroomUI({ role }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef(null);
 
   const tracks = useTracks([
     { source: Track.Source.Camera, withPlaceholder: false },
     { source: Track.Source.ScreenShare, withPlaceholder: false },
   ]);
 
-  // 🔥 BEST WAY: detect teacher (publisher)
+  
   const teacherTrack = tracks.find(
     (t) => t.participant.permissions?.canPublish
   );
+
+  // ✅ FULLSCREEN TOGGLE
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      containerRef.current?.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+  };
+
+  // ✅ LISTEN FULLSCREEN CHANGE
+  useEffect(() => {
+    const handleChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleChange);
+  }, []);
 
   if (!teacherTrack) {
     return (
@@ -32,23 +55,28 @@ export default function ClassroomUI({ role }) {
   }
 
   return (
-    <div className="classroom-layout">
+    <div
+      ref={containerRef}
+      className={`classroom-layout ${isFullscreen ? "fs-mode" : ""}`}
+    >
       {/* MAIN VIDEO */}
       <div className={`main-stage ${sidebarOpen ? "" : "full-width"}`}>
+        
+        {/* FULLSCREEN BUTTON */}
+        <button
+          className="fullscreen-btn"
+          onClick={toggleFullscreen}
+          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+        >
+          {isFullscreen ? <MdFullscreenExit size={20} /> : <MdFullscreen size={20} />}
+        </button>
+
+        {/* SIDEBAR TOGGLE */}
         <button
           className="toggle-sidebar-btn"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          title={sidebarOpen ? "Hide panel" : "Show panel"}
         >
-          {sidebarOpen ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          )}
+          ⇄
         </button>
 
         <VideoTrack trackRef={teacherTrack} />
@@ -62,10 +90,8 @@ export default function ClassroomUI({ role }) {
         </div>
       )}
 
-      {/* CONTROLS */}
-      <ControlBar role={role} />
 
-      {/* STUDENT ONLY */}
+      <ControlBar role={role} />
       {role === "STUDENT" && <RaiseHandButton />}
     </div>
   );

@@ -542,6 +542,54 @@
   box-shadow: 0 0 0 4px rgba(210,153,34,.15), var(--ls-shadow-sm);
 }
 
+/* FULLSCREEN MODE */
+.classroom-layout.fs-mode{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: #0f172a;
+  padding: 0;
+  margin: 0;
+  gap: 0;
+}
+
+/* REMOVE RADIUS IN FULLSCREEN */
+.classroom-layout.fs-mode .main-stage video{
+  border-radius: 0;
+}
+
+/* BUTTON POSITION */
+.fullscreen-btn{
+  position: absolute;
+  top: 14px;
+  right: 60px;
+  z-index: 20;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+}
+
+/* SIDEBAR TOGGLE */
+.toggle-sidebar-btn{
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 20;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+}
+
 /* ===== mobile ===== */
 @media (max-width: 900px) {
   .classroom-layout {
