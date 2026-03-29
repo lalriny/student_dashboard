@@ -39,8 +39,6 @@ export default function QuizDetail() {
   const durationRef  = useRef(null);
   const startTimeRef = useRef(null);
 
-  const [showExitModal, setShowExitModal] = useState(false);
-  
   // ── start quiz + fetch ───────────────────────────────────────────────────
   useEffect(() => {
     async function initQuiz() {
@@ -202,7 +200,7 @@ export default function QuizDetail() {
       {/* ── TOP BAR ── */}
       <div className="quiz-top-bar">
         <div className="quiz-top-left">
-          <button className="quiz-back-btn" onClick={() => setShowExitModal(true)}
+          <button className="quiz-back-btn" onClick={() => navigate(`/subjects/quiz/${subjectId}`)}>
             ← Back
           </button>
           <span className="quiz-title">{quizData.title}</span>
