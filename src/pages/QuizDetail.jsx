@@ -21,6 +21,8 @@ const palClass = (status) => {
   }
 };
 
+const OPTION_LABELS = ["A", "B", "C", "D", "E", "F"];
+
 export default function QuizDetail() {
   const navigate = useNavigate();
   const { subjectId, quizId } = useParams();
@@ -40,18 +42,14 @@ export default function QuizDetail() {
   const durationRef  = useRef(null);
   const startTimeRef = useRef(null);
 
-  // ── start quiz + fetch ───────────────────────────────────────────────────
+  // ── fetch + start ────────────────────────────────────────────────────────
   useEffect(() => {
     async function initQuiz() {
       try {
         setLoading(true);
         setError(null);
-
-        try {
-          await api.post(`/quizzes/${quizId}/start/`);
-        } catch (err) {
-          console.error("Start quiz failed:", err.response?.data);
-        }
+        try { await api.post(`/quizzes/${quizId}/start/`); }
+        catch (err) { console.error("Start quiz failed:", err.response?.data); }
 
         const res = await api.get(`/quizzes/${quizId}/`);
         setQuizData(res.data);
@@ -71,7 +69,6 @@ export default function QuizDetail() {
         } else {
           st = parseInt(st, 10);
         }
-
         startTimeRef.current = st;
 
         const elapsed = Math.floor((Date.now() - st) / 1000);
@@ -82,7 +79,6 @@ export default function QuizDetail() {
         setLoading(false);
       }
     }
-
     if (quizId) initQuiz();
   }, [quizId]);
 
@@ -95,31 +91,23 @@ export default function QuizDetail() {
       await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
       localStorage.removeItem(`quiz_${quizId}_start`);
       navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
-    } catch (err) {
-      console.error("Auto submit failed", err);
-    }
+    } catch (err) { console.error("Auto submit failed", err); }
   }, [quizId, subjectId, navigate]);
 
   // ── timer ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (durationRef.current === null || startTimeRef.current === null) return;
-
     const interval = setInterval(() => {
       const elapsed   = Math.floor((Date.now() - startTimeRef.current) / 1000);
       const remaining = durationRef.current - elapsed;
-
       if (remaining <= 0) {
         clearInterval(interval);
         setTimeLeft(0);
-        if (!submittedRef.current) {
-          submittedRef.current = true;
-          handleAutoSubmit();
-        }
+        if (!submittedRef.current) { submittedRef.current = true; handleAutoSubmit(); }
       } else {
         setTimeLeft(remaining);
       }
     }, 1000);
-
     return () => clearInterval(interval);
   }, [handleAutoSubmit]);
 
@@ -146,7 +134,6 @@ export default function QuizDetail() {
       answersRef.current = updated;
       return updated;
     });
-
     setPalette(p => ({
       ...p,
       [questionId]:
@@ -157,10 +144,7 @@ export default function QuizDetail() {
 
   const handleMarkForReview = () => {
     const qId = quizData.questions[currentIndex].id;
-    setPalette(p => ({
-      ...p,
-      [qId]: answers[qId] ? S.MARKED_ANSWERED : S.MARKED
-    }));
+    setPalette(p => ({ ...p, [qId]: answers[qId] ? S.MARKED_ANSWERED : S.MARKED }));
     if (currentIndex < quizData.questions.length - 1) goTo(currentIndex + 1);
   };
 
@@ -175,15 +159,9 @@ export default function QuizDetail() {
     setPalette(p => ({ ...p, [qId]: S.NOT_ANSWERED }));
   };
 
-  const handleSaveAndNext = () => {
-    if (currentIndex < quizData.questions.length - 1) goTo(currentIndex + 1);
-  };
+  const handlePrevious = () => { if (currentIndex > 0) goTo(currentIndex - 1); };
+  const handleNext     = () => { if (currentIndex < quizData.questions.length - 1) goTo(currentIndex + 1); };
 
-  const handlePrevious = () => {
-    if (currentIndex > 0) goTo(currentIndex - 1);
-  };
-
-  // ── exit ──────────────────────────────────────────────────────────────────
   const handleExitQuiz = () => {
     localStorage.removeItem(`quiz_${quizId}_start`);
     navigate(`/subjects/quiz/${subjectId}`);
@@ -195,20 +173,15 @@ export default function QuizDetail() {
       setError("Please answer all questions before submitting.");
       return;
     }
-
     try {
       setSubmitting(true);
       setError(null);
-
       const formatted = Object.entries(answers).map(([q, c]) => ({
         question: q, selected_choice: c,
       }));
-
       await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
-
       localStorage.removeItem(`quiz_${quizId}_start`);
       submittedRef.current = true;
-
       navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to submit quiz.");
@@ -229,21 +202,10 @@ export default function QuizDetail() {
 
       {/* TOP BAR */}
       <div className="quiz-top-bar">
-        <div className="quiz-top-left">
-          <button
-            className="quiz-back-btn"
-            onClick={() => setShowExitModal(true)}
-          >
-            ← Back
-          </button>
-          <span className="quiz-title">{quizData.title}</span>
-        </div>
-
-        <div className="quiz-top-meta">
-          <span className="quiz-meta-chip">Max Mark: <b>{quizData.max_mark ?? 1}</b></span>
-          <span className="quiz-meta-chip">Negative: <b>{quizData.negative_mark ?? 0}</b></span>
-          <span className="quiz-meta-chip">Subject: <b>{quizData.subject_name}</b></span>
-        </div>
+        <button className="quiz-back-btn" onClick={() => setShowExitModal(true)}>
+          ← Back
+        </button>
+        <span className="quiz-title">{quizData.title}</span>
       </div>
 
       {/* BODY */}
@@ -254,27 +216,36 @@ export default function QuizDetail() {
 
           {error && <div className="quiz-error-box">{error}</div>}
 
-          <div className="quiz-q-header">
-            <span className="quiz-q-num">Q.{currentIndex + 1}</span>
-          </div>
-
+          <h2 className="quiz-q-heading">Question {currentIndex + 1}.</h2>
           <p className="quiz-q-text">{q.text}</p>
 
-          <div className="quiz-opt-label">Options</div>
+          {/* Options with A/B/C/D labels */}
+          <div className="quiz-options">
+            {q.choices.map((choice, ci) => (
+              <label
+                key={choice.id}
+                className={`quiz-opt-row ${answers[q.id] === choice.id ? "selected" : ""}`}
+              >
+                <span className="quiz-opt-letter">{OPTION_LABELS[ci]}</span>
+                <input
+                  type="radio"
+                  name={`question-${q.id}`}
+                  checked={answers[q.id] === choice.id}
+                  onChange={() => handleAnswerChange(q.id, choice.id)}
+                />
+                {choice.text}
+              </label>
+            ))}
+          </div>
 
-          {q.choices.map(choice => (
-            <label key={choice.id} className="quiz-opt-row">
-              <input
-                type="radio"
-                name={`question-${q.id}`}
-                checked={answers[q.id] === choice.id}
-                onChange={() => handleAnswerChange(q.id, choice.id)}
-              />
-              {choice.text}
-            </label>
-          ))}
+          {/* Explanation (if available) */}
+          {q.explanation && (
+            <div className="quiz-explanation">
+              <strong>Explanation:</strong> {q.explanation}
+            </div>
+          )}
 
-          {/* ✅ BOTTOM ACTION BUTTONS */}
+          {/* Bottom nav buttons — Previous / Next only, like screenshot */}
           <div className="quiz-action-bar">
             <button
               className="quiz-btn-mark"
@@ -290,63 +261,39 @@ export default function QuizDetail() {
               Clear Response
             </button>
 
-            <button
-              className="quiz-btn-prev"
-              onClick={handlePrevious}
-              disabled={currentIndex === 0}
-            >
-              ◄ Previous
-            </button>
-
-            <button
-              className="quiz-btn-next"
-              onClick={handleSaveAndNext}
-              disabled={currentIndex === qLen - 1}
-            >
-              Save &amp; Next ►
-            </button>
+            <div className="quiz-nav-btns">
+              <button
+                className="quiz-btn-prev"
+                onClick={handlePrevious}
+                disabled={currentIndex === 0}
+              >
+                ◄ Previous
+              </button>
+              <button
+                className="quiz-btn-next"
+                onClick={handleNext}
+                disabled={currentIndex === qLen - 1}
+              >
+                Next ►
+              </button>
+            </div>
           </div>
 
         </div>
 
-        {/* ✅ RIGHT — sidebar */}
+        {/* RIGHT — sidebar */}
         <div className="quiz-sidebar">
 
           {/* Timer */}
           <div className="quiz-timer">
-            <div className="quiz-timer-label">Time Limit</div>
+            <div className="quiz-timer-label">Time Limit:</div>
             <div className="quiz-timer-value">
               {timeLeft !== null ? fmtTime(timeLeft) : "--:--:--"}
             </div>
             <div className="quiz-timer-sub">(minutes)</div>
           </div>
 
-          {/* Legend */}
-          <div className="quiz-legend">
-            <div className="quiz-legend-item">
-              <span className="quiz-legend-dot answered" />
-              Answered
-            </div>
-            <div className="quiz-legend-item">
-              <span className="quiz-legend-dot not-answered" />
-              Not Answered
-            </div>
-            <div className="quiz-legend-item">
-              <span className="quiz-legend-dot not-visited" />
-              Not Visited
-            </div>
-            <div className="quiz-legend-item">
-              <span className="quiz-legend-dot marked" />
-              Marked for Review
-            </div>
-            <div className="quiz-legend-item">
-              <span className="quiz-legend-dot marked-answered" />
-              Answered &amp; Marked
-            </div>
-          </div>
-
-          {/* Palette */}
-          <div className="quiz-palette-label">Questions Palette</div>
+          {/* Palette grid */}
           <div className="quiz-palette-grid">
             {quizData.questions.map((pq, idx) => (
               <button
@@ -359,13 +306,15 @@ export default function QuizDetail() {
             ))}
           </div>
 
-          {/* Submit */}
-          {/* Score (shown post-result if needed) */}
-          <div className="quiz-score-box" style={{ display: "none" }}>
+          {/* Score */}
+          <div className="quiz-score-box">
             <div className="quiz-score-label">Score:</div>
-            <div className="quiz-score-value">0/{qLen}</div>
+            <div className="quiz-score-value">
+              {Object.keys(answers).length}/{qLen}
+            </div>
           </div>
 
+          {/* Submit */}
           <button
             className="quiz-submit-btn"
             onClick={handleSubmit}
@@ -387,19 +336,11 @@ export default function QuizDetail() {
               <br /><br />
               ⚠️ Your progress will be lost if you exit.
             </p>
-
             <div className="quiz-modal-actions">
-              <button
-                className="quiz-btn-cancel"
-                onClick={() => setShowExitModal(false)}
-              >
+              <button className="quiz-btn-cancel" onClick={() => setShowExitModal(false)}>
                 Cancel
               </button>
-
-              <button
-                className="quiz-btn-exit"
-                onClick={handleExitQuiz}
-              >
+              <button className="quiz-btn-exit" onClick={handleExitQuiz}>
                 Exit Quiz
               </button>
             </div>
